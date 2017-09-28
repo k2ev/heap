@@ -1,2 +1,0 @@
-class heapArray:
-    pass
