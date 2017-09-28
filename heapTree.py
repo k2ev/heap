@@ -68,6 +68,14 @@ class heapT(BTreeLinked):
 
     @staticmethod
     def bin_repr(num):
+        # binary representation can also be thought of in following way
+        # any node is either 2n (left node) or 2n+1 (right node). Parent node is n
+        # example when node num is 10
+        # 10 = 2 * 5 + 0. Its even number and therefore left child of node 5
+        # 5 = 2 * 2 + 1. Its odd number and therefore right child of node 2
+        # 2 = 2 * 1 + 0. Its even number and therefore left child of node 1
+        # 1 is root node
+        # put together all the mod in reverse order 1010. This is also binary representation of 10
         bin_repr = []
         while num != 0:
             bin_repr.insert(0, num & 1) # this is bit and op.
