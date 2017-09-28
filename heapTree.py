@@ -60,6 +60,9 @@ class heapT(BTreeLinked):
     def pop(self):
         return self.remove()
 
+    def peek(self):
+        return self.root
+
     def _increment_num_of_nodes(self):
         self._num_of_nodes = self._num_of_nodes + 1
 
