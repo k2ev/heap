@@ -1,5 +1,5 @@
 import sys
-sys.path.insert(0, '/Users/kiki/PycharmProjects/BTrees')
+sys.path.extend(['/Users/kiki/PycharmProjects/BTrees'])
 from BTree import BTreeLinked
 
 class heapT(BTreeLinked):
