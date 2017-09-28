@@ -2,7 +2,7 @@ import sys
 sys.path.insert(0, '/Users/kiki/PycharmProjects/BTrees')
 from BTree import BTreeLinked
 
-class heapTree(BTreeLinked):
+class heapT(BTreeLinked):
 
     node_type = "regular"
 
