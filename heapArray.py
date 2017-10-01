@@ -31,20 +31,28 @@ class heapA:
     def __repr__(self):
         return str(self._data_array)
 
-    # def __str__(self):
-    #     max_level = self.level(self.size)
-    #     items_at_max_level = 2**max_level
-    #     pos, level, heap_str = 1, 0, ""
-    #     while level <= max_level:
-    #         items_at_level = 2**level
-    #         stub_spaces = max_level - level
-    #         inter_spaces = (items_at_max_level - 2 * stub_spaces)//items_at_level
-    #         heap_str = " " * stub_spaces
-    #         for current in range(0,items_at_level):
-    #             heap_str = heap_str + str(self.get_item(pos+current)) + ' ' * inter_spaces
-    #         heap_str = heap_str + "/n"
-    #         pos, level = pos+items_at_level, level+1
-    #     return heap_str
+    def __str__(self):
+        data = self._data_array
+        max_level = self.level(self.size)
+        max_items = 2**(max_level+1)-1
+        pos, level, heap_str, width = 1, 0, "", 2
+        space_str, pad_str= ' ' * width, '_' * width
+        while level <= max_level:
+            items_at_level = 2**level
+            intra_items = 2**(max_level-level)//2
+            inter_items = divmod(max_items, items_at_level)[0] - 2*intra_items
+            stub_items = (max_items - items_at_level - inter_items * (items_at_level-1) - 2*intra_items*items_at_level) // 2
+            intra_items = 2**(max_level-level-1) if level < max_level else 0
+            heap_str = heap_str + space_str * stub_items
+            for current in range(0,items_at_level):
+                item = self.get_item(pos+current)
+                item_align= '>' if (pos+current)%2 else '<'
+                item_fmt = '{:{align}{width}}'.format(str(item if item is not None else space_str), align=item_align, width=width)
+                item_str = pad_str*intra_items+item_fmt+pad_str*intra_items
+                heap_str = heap_str + item_str + space_str * inter_items
+            heap_str = heap_str.rstrip() + space_str * stub_items + "\n"
+            pos, level = pos+items_at_level, level+1
+        return heap_str
 
     def _increment_size(self):
         self._size += 1
@@ -147,7 +155,6 @@ class heapA:
             parent_pos = cls.pos_parent(heap._size)
             while parent_pos > 0:
                 heap.heapify(parent_pos)
-                print(heap)
                 parent_pos = parent_pos - 1
         return heap
 

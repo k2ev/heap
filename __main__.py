@@ -28,7 +28,7 @@ def run_heapAMinMax():
     h.insert(0)
     h.insert(5)
     print(h)
-    a = heapAMinMax.from_list([10,1,3,2,11,0,5])
+    a = heapAMinMax.from_list([10,1,3,2,11,0,5, 6, 8, 9, 23])
     print(a)
     a.pop_max()
     print(a)
