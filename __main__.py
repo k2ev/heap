@@ -1,5 +1,6 @@
 from heapTree import heapT
-from heapArray import heapA, heapAMax, heapAMinMax
+from heapArray import heapA, heapAMax
+from DEPS import heapAMinMax, heapATwin
 
 def run_heapT():
     h = heapT.from_list([3,2,1,7,8,4,10,16,12])
@@ -16,7 +17,6 @@ def run_heapA():
     print(h)
     h.remove()
     print(h)
-
 
 def run_heapAMinMax():
     h = heapAMinMax()
@@ -35,10 +35,33 @@ def run_heapAMinMax():
     a.pop()
     print(a)
 
+def run_twin():
+    a = heapATwin.from_list([10,1,3,2,11,0,5, 6, 8, 9, 23])
+    a.insert(4)
+    a.insert(-1)
+    a.insert(-2)
+    a.remove()
+    a.remove()
+    a.remove()
+    a.remove()
+    a.remove()
+    print(a)
+    a.pop_max()
+    print(a)
+    a.pop_max()
+    a.pop_max()
+    a.pop_max()
+    a.pop_max()
+    a.pop_max()
+    a.pop_max()
+    a.pop()
+    print(a)
+
 def main():
     #run_heapA()
     #run_heapT()
-    run_heapAMinMax()
+    #run_heapAMinMax()
+    run_twin()
 
 if __name__ == "__main__":
     main()

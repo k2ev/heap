@@ -1,1 +1,1 @@
-__all__ = ["heapTree"]
+__all__ = ["heapTree", "heapArray", "DEPS"]

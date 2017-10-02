@@ -1,6 +1,6 @@
 import operator
 import collections
-from math import floor, log2
+import math
 
 class heapA:
 
@@ -32,43 +32,46 @@ class heapA:
         return str(self._data_array)
 
     def __str__(self):
-        data = self._data_array
-        max_level = self.level(self.size)
-        max_items = 2**(max_level+1)-1
-        pos, level, heap_str, width = 1, 0, "", 2
-        space_str, pad_str= ' ' * width, '_' * width
-        while level <= max_level:
-            items_at_level = 2**level
-            intra_items = 2**(max_level-level)//2
-            inter_items = divmod(max_items, items_at_level)[0] - 2*intra_items
-            stub_items = (max_items - items_at_level - inter_items * (items_at_level-1) - 2*intra_items*items_at_level) // 2
-            intra_items = 2**(max_level-level-1) if level < max_level else 0
-            heap_str = heap_str + space_str * stub_items
-            for current in range(0,items_at_level):
-                item = self.get_item(pos+current)
-                item_align= '>' if (pos+current)%2 else '<'
-                item_fmt = '{:{align}{width}}'.format(str(item if item is not None else space_str), align=item_align, width=width)
-                item_str = pad_str*intra_items+item_fmt+pad_str*intra_items
-                heap_str = heap_str + item_str + space_str * inter_items
-            heap_str = heap_str.rstrip() + space_str * stub_items + "\n"
-            pos, level = pos+items_at_level, level+1
-        return heap_str
+        if self.size:
+            data = self._data_array
+            max_level = self.level(self.size)
+            max_items = 2**(max_level+1)-1
+            pos, level, heap_str, width = 1, 0, "", 2
+            space_str, pad_str= ' ' * width, '_' * width
+            while level <= max_level:
+                items_at_level = 2**level
+                intra_items = 2**(max_level-level)//2
+                inter_items = divmod(max_items, items_at_level)[0] - 2*intra_items
+                stub_items = (max_items - items_at_level - inter_items * (items_at_level-1) - 2*intra_items*items_at_level) // 2
+                intra_items = 2**(max_level-level-1) if level < max_level else 0
+                heap_str = heap_str + space_str * stub_items
+                for current in range(0,items_at_level):
+                    item = self.item(pos + current)
+                    item_align= '>' if (pos+current)%2 else '<'
+                    item_fmt = '{:{align}{width}}'.format(str(item if item is not None else space_str), align=item_align, width=width)
+                    item_str = pad_str*intra_items+item_fmt+pad_str*intra_items
+                    heap_str = heap_str + item_str + space_str * inter_items
+                heap_str = heap_str.rstrip() + space_str * stub_items + "\n"
+                pos, level = pos+items_at_level, level+1
+            return heap_str
+        else:
+            return ""
 
-    def _increment_size(self):
+    def increment_size(self):
         self._size += 1
 
-    def _decrement_size(self):
+    def decrement_size(self):
         self._size -= 1
 
     def __len__(self):
         return self._size
 
-    def get_item(self, pos=None): #get item from end of array
+    def item(self, pos=None): #get item from end of array
         first, last = 0, len(self) - 1
         index = pos - 1 if pos else last
         return self._data_array[index] if index >= first and index <= last else None
 
-    def set_item(self, val, pos = 1): # set item at start of array
+    def set_item(self, pos = 1, val=None): # set item at start of array
         index = pos - 1
         self._data_array[index] = val
 
@@ -79,19 +82,29 @@ class heapA:
                     self.insert(elem)
             else:
                 self._data_array.append(val)
-                self._increment_size()
+                self.increment_size()
                 self.sift_up()
         return val
 
-    def remove(self):
-        first_item = self.peek()
-        last_item = self._data_array.pop()
-        self._decrement_size()
-        self.set_item(last_item)
-        self.heapify()
-        return first_item
+    def remove_last(self):
+        if self.size:
+            last_item = self._data_array.pop()
+            self.decrement_size()
+            return last_item
+        else:
+            raise Exception
 
-    def _swap(self, posA, posB):
+    def remove(self):
+        if self.size:
+            first_item = self.peek()
+            last_item = self.remove_last()
+            self.set_item(1, last_item)
+            self.heapify()
+            return first_item
+        else:
+            return None
+
+    def swap(self, posA, posB):
         self._data_array[posA-1], self._data_array[posB-1] = self._data_array[posB-1], self._data_array[posA-1]
 
     def sift_up(self, pos=None):
@@ -106,20 +119,25 @@ class heapA:
         pos_parent = self.pos_parent(pos, shift)
 
         while pos_parent > 0:
-            if op_cmp(self.get_item(pos),self.get_item(pos_parent)):
-                self._swap(pos, pos_parent)
+            if op_cmp(self.item(pos), self.item(pos_parent)):
+                self.swap(pos, pos_parent)
                 pos = pos_parent
                 pos_parent = self.pos_parent(pos, shift)
             else:
                 break
 
-    def _heapify(self, pos=1, op_cmp=operator.gt):
+    def _heapify_w_info(self, pos=1, op_cmp=operator.gt):
         if pos <= self.size and self._child_exists(pos): # at-least have one child
-            pos_val = self.get_item(pos)
+            pos_val = self.item(pos)
             min_max_pos, min_max_val = self._min_max_family(pos, self.op_flip(op_cmp))
             if min_max_val is not None and op_cmp(pos_val, min_max_val):
-                self._swap(pos, min_max_pos)
-                self._heapify(min_max_pos, op_cmp)
+                self.swap(pos, min_max_pos)
+                pos = min_max_pos
+                return self._heapify_w_info(pos, op_cmp)
+        return pos
+
+    def _heapify(self, pos=1, op_cmp=operator.gt):
+        _ = self._heapify_w_info(pos, op_cmp)
 
     def _child_exists(self, pos):
         return False if 2*pos > self.size else True
@@ -131,13 +149,16 @@ class heapA:
         return self.insert(val)
 
     def peek(self):
-        return self.get_item(1)
+        return self.item(1)
 
     def min(self):
         return self.peek(self)
 
     def max(self):
         raise Exception
+
+    def is_empty(self):
+        return False if self.size > 0 else True
 
     @classmethod
     def merge(cls, heapA, heapB):
@@ -179,7 +200,7 @@ class heapA:
 
         pos, val = None, None
         for current in family:
-            current_val = self.get_item(current)
+            current_val = self.item(current)
             if current_val is not None and (val is None or op_cmp(current_val, val)):
                 pos, val = current, current_val
 
@@ -196,17 +217,23 @@ class heapA:
 
     @staticmethod
     def level(x):
-        return floor(log2(x))
+        return int(math.floor(math.log2(x)))
 
 class heapAMax(heapA):
     def __init__(self,val=None):
-        super().__init(self,val)
+        super().__init__(val)
 
     def sift_up(self, pos=None):
         super()._sift_up(pos, operator.gt)
 
     def heapify(self, pos=1):
-        super()._heapify(pos, operator.gt)
+        super()._heapify(pos, operator.lt)
+
+    def _heapify(self, pos=1, op_cmp=operator.lt):
+        _ = self._heapify_w_info(pos, op_cmp)
+
+    def _heapify_w_info(self, pos=1, op_cmp=operator.lt):
+         return super()._heapify_w_info(pos, op_cmp)
 
     def max(self):
         return self.peek()
@@ -214,68 +241,3 @@ class heapAMax(heapA):
     def min(self):
         raise Exception
 
-
-class heapAMinMax(heapA):
-    def __init__(self,val=None):
-        super().__init__(val)
-
-    def sift_up(self, pos=None):
-        pos = pos or len(self)
-        pos_val = self.get_item(pos)
-        pos_parent = pos >> 1
-        parent_val = self.get_item(pos_parent)
-        if parent_val is not None:
-            if self.is_min_level(pos):
-                if operator.gt(pos_val, parent_val):
-                    self._swap(pos,pos_parent)
-                    self._sift_up(pos_parent, operator.gt, 2)
-                else:
-                    self._sift_up(pos, operator.lt, 2)
-            else:
-                if operator.lt(pos_val, parent_val):
-                    self._swap(pos, pos_parent)
-                    self._sift_up(pos_parent, operator.lt, 2)
-                else:
-                    self._sift_up(pos, operator.gt, 2)
-
-    def heapify(self, pos=1):
-        if self.is_min_level(pos):
-            self._heapify(pos, operator.gt)
-        else:
-            self._heapify(pos, operator.lt)
-
-    def _heapify(self, pos=1, op_cmp=operator.gt):
-        if pos <= self.size and self._child_exists(pos):  # atleast left child exists
-            pos_val = self.get_item(pos)
-            min_max_pos, min_max_val = self._min_max_family(pos, self.op_flip(op_cmp), 2)
-            if min_max_pos in self.pos_children(pos):
-                if op_cmp(pos_val, min_max_val):
-                    self._swap(pos, min_max_pos)
-            else:
-                if min_max_val is not None and op_cmp(pos_val, min_max_val):
-                    self._swap(pos, min_max_pos)
-                    min_max_parent_pos = self.pos_parent(min_max_pos)
-                    min_max_parent_val = self.get_item(min_max_parent_pos)
-                    if min_max_parent_val is not None and op_cmp(min_max_parent_val, min_max_val):
-                        self._swap(min_max_pos, min_max_parent_pos)
-                    self._heapify(min_max_pos, op_cmp)
-
-    def min(self):
-        return self.peek()
-
-    def max(self):
-        index, val = self._min_max_family(1, operator.gt)
-        return val
-
-    def pop_max(self):
-        max_item_pos, max_item = self._min_max_family(1, operator.gt)
-        last_item = self._data_array.pop()
-        self._decrement_size()
-        self.set_item(last_item, max_item_pos)
-        self.heapify(max_item_pos)
-
-    @staticmethod
-    def is_min_level(x):
-        # even levels are min
-        level = floor(log2(x))
-        return not (level & 1)
