@@ -32,6 +32,12 @@ class heapA:
         return str(self._data_array)
 
     def __str__(self):
+        # 2*stub_items + nodes + (nodes-1)*net_inter_items + 2*intra_items*nodes = Total number of nodes in tree (T)
+        # net_inter_items = inter_items - 2*intra_items,
+        # inter_items = T // nodes.
+        # intra_items = 2**(diff_level) // 2. Its the number of items between parent and a child.
+        # level starts with 0 for root
+
         if self.size:
             data = self._data_array
             max_level = self.level(self.size)
