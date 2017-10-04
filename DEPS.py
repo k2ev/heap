@@ -68,7 +68,6 @@ class heapAMinMax(heapA):
         level = int(math.floor(math.log2(x)))
         return not (level & 1)
 
-
 class heapATwin:
     def __init__(self, h1=None, h2=None):
         self._min_heap = heapA() if h1 is None else heapA.from_list(h1)
@@ -199,6 +198,168 @@ class heapATwin:
             return cls(min_h, max_h)
         else:
             return cls()
+
+class heapADeap(heapA):
+    _offset = 1
+
+    def __init__(self):
+        self._data_array = [None]
+        self._size = 0
+
+    def _swap_cross_heap(self, pos_current):
+        pos_alt = self._corresponding_pos(pos_current)
+        if self.in_min_heap(pos_current):
+            if self.item(pos_alt) is not None and self.item(pos_current) > self.item(pos_alt):
+                self.swap(pos_current, pos_alt)
+                pos_current = pos_alt
+        else:
+            if self.item(pos_alt) is not None and self.item(pos_current) < self.item(pos_alt):
+                    self.swap(pos_current, pos_alt)
+                    pos_current = pos_alt
+        return pos_current
+
+    def sift_up(self, pos=None):
+        pos_current = pos or self._pos_last()
+        pos_current = self._swap_cross_heap(pos_current)
+
+        if self.in_min_heap(pos_current):
+            return super()._sift_up(pos_current, operator.lt)
+        else:
+            return super()._sift_up(pos_current, operator.gt)
+
+    def sift_up_partial(self, pos=None, min_level=1):
+        pos_current = pos or self._pos_last()
+        pos_current = self._swap_cross_heap(pos_current)
+
+        if self.in_min_heap(pos_current):
+            return super()._sift_up(pos_current, operator.lt, 1, min_level)
+        else:
+            return super()._sift_up(pos_current, operator.gt, 1, min_level)
+
+    def insert(self, val=None):
+        if val is not None:
+            if isinstance(val, collections.Sequence):
+                for elem in val:
+                    self.insert(elem)
+            else:
+                self._data_array.append(val)
+                self.increment_size()
+                pos_current = self._pos_last()
+                self.sift_up(pos_current)
+
+    def _remove(self, pos=None):
+        pos = pos or self._pos_first()
+        if self.size:
+            first_item = self.item(pos)
+            pos_first_item = pos
+            last_item = self.remove_last()
+            if self.size:
+                if self.in_min_heap(pos):
+                    self.set_item(pos_first_item, math.inf)
+                    pos_current = self._heapify_w_info(pos_first_item, operator.gt)
+                else:
+                    self.set_item(pos_first_item, -math.inf)
+                    pos_current = self._heapify_w_info(pos_first_item, operator.lt)
+                self.set_item(pos_current, last_item)  # reinsert last item at a leaf position
+                self.sift_up(pos_current)
+            return first_item
+        else:
+            return None
+
+    def remove(self):
+        return self._remove()
+
+    def pop_max(self):
+        if self.size:
+            if self.size == 1:
+                return self._remove()
+            else:
+                pos_first_item = self._pos_first() + 1
+                return self._remove(pos_first_item)
+        else:
+            return None
+
+    def _heapify_w_info(self, pos=None, op_cmp=None):
+        pos = pos or self._pos_last()
+        if self.in_min_heap(pos):
+            return super()._heapify_w_info(pos, operator.gt)
+        else:
+            return super()._heapify_w_info(pos, operator.lt)
+
+    def _heapify(self, pos=None, op_cmp=operator.gt):
+        pos = pos or self._pos_last()
+        _ = self._heapify_w_info(pos)
+
+    def _corresponding_pos(self, pos):
+        level = self.level(pos)
+        nodes_at_prior_level = self.nodes_at_level(level - 1)
+        if self.level(nodes_at_prior_level + pos) == level:
+            pos = pos + nodes_at_prior_level
+            if pos > self._pos_last():
+                return self.pos_parent(pos)
+            else:
+                return pos
+        else:
+            pos = pos - nodes_at_prior_level
+            if self._child_exists(pos):
+                pos_child, _ = self._min_max_family(pos, operator.gt)
+                return pos_child
+            else:
+                return pos
+
+    @classmethod
+    def in_min_heap(cls, pos):
+        level = cls.level(pos)
+        nodes_at_prior_level = cls.nodes_at_level(level-1)
+        if cls.level(nodes_at_prior_level + pos) == level:
+            return True
+        else:
+            return False
+
+    @staticmethod
+    def partition(list_val, pivot_index):
+        list_size = len(list_val)
+        pivot = list_val[pivot_index]
+        # swap pivot with last element
+        list_val[pivot_index], list_val[list_size - 1] = list_val[list_size - 1], list_val[pivot_index]
+        # i is boundary of partition with smaller elements; j is boundary of partition with higher elements.
+        # in between i and j is the working area
+        i, j = 0, list_size - 1
+        while j > i:
+            if list_val[j - 1] > pivot:
+                list_val[j] = list_val[j - 1]
+                j = j - 1
+            else:
+                list_val[i], list_val[j - 1] = list_val[j - 1], list_val[i]
+                i = i + 1
+        list_val[j] = pivot
+        return j
+
+    @classmethod
+    def from_list(cls, list_val):
+        heap = cls()
+        if isinstance(list_val, collections.Sequence):
+            heap._data_array.extend(list_val)
+            heap._size = len(list_val)
+            pos_first = 1 + cls._offset
+            pos_last = pos_first + heap._size - 1
+            # goes till last node in the prior level
+            pos_current = cls.nodes_all_levels(cls.level(cls.pos_parent(pos_last)))
+            while pos_current >= pos_first:
+                print(heap)
+                current, current_val, level = pos_current, heap.item(pos_current), cls.level(pos_current)
+                if heap.in_min_heap(current):
+                    heap.set_item(current, math.inf)
+                    current = heap._heapify_w_info(current, operator.gt)
+                else:
+                    heap.set_item(current, -math.inf)
+                    current = heap._heapify_w_info(current, operator.lt)
+                heap.set_item(current, current_val)
+                heap.sift_up_partial(current, level)
+                pos_current = pos_current - 1
+            return heap
+
+
 
 
 
