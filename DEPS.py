@@ -93,34 +93,67 @@ class heapATwin:
     def size(self):
         return self.min_heap.size + self.max_heap.size
 
+    def _pos_last(self):
+        if self._last_in_min_heap():
+            return self.max_heap._pos_last()
+        else:
+            return self.min_heap._pos_last()
+
+    def _last_in_min_heap(self):
+        if self.size():
+            return self.min_heap.size > self.max_heap.size
+        else:
+            return False
+
+    def _pos_correspond(self, pos):
+        corresponding = pos
+        if self.min_heap.size > self.max_heap.size:
+            if pos == self.min_heap._pos_last():
+                corresponding =  pos // 2
+        return corresponding
+
+    def _swap_cross_heap_info(self, pos):
+        pos_correspond = self._pos_correspond(pos)
+        temp_1, temp_2 = self.min_heap.item(pos), self.max_heap.item(pos_correspond)
+        if self.min_heap.item(pos) > self.max_heap.item(pos_correspond):
+            self.min_heap.set_item(pos, temp_2)
+            self.max_heap.set_item(pos_correspond, temp_1)
+            return True, pos_correspond
+        else:
+            return False, pos
+
+    def _swap_cross_heap(self, pos):
+        return self._swap_cross_heap(pos)[1]
+
     def insert(self, val):
         if val is not None:
             if isinstance(val, collections.Sequence):
                 for elem in val:
                     self.insert(elem)
             else:
-                if self.min_heap.size <= self.max_heap.size:
-                    pos = self.min_heap.size + 1
-                    # pos_correspond is same index if total items are even numbered
-                    # for odd numbered, two implementations exists
-                    # in this implementation, min heap is allowed up to one more than max heap
-                    # another implementation is to keep it same in both heaps, and then remaining item is in buffer
-                    # in prior approach implemented here, if corresponding item doesnt exists then look up parent
-                    # in later approach, no need to do so as buffer is maintained
-                    pos_correspond = pos if pos == self.max_heap.size else pos // 2
-                    if val > self.max_heap.item(pos_correspond):
-                        temp, val = val, self.max_heap.item(pos_correspond)
-                        self.max_heap.set_item(pos_correspond, temp)
-                        self.max_heap.sift_up(pos_correspond)
+                # pos_correspond is same index if total items are even numbered
+                # for odd numbered, two implementations exists
+                # in this implementation, min heap is allowed up to one more than max heap
+                # another implementation is to keep it same in both heaps, and then remaining item is in buffer
+                # in prior approach implemented here, if corresponding item doesnt exists then look up parent
+                # in later approach, no need to do so as buffer is maintained
+                if self.size() == 0:
                     self.min_heap.insert(val)
                 else:
-                    pos = self.max_heap.size + 1
-                    pos_correspond = pos
-                    if val < self.min_heap.item(pos_correspond):
-                        temp, val = val, self.min_heap.item(pos_correspond)
-                        self.min_heap.set_item(pos_correspond, temp)
-                        self.min_heap.sift_up(pos_correspond)
-                    self.max_heap.insert(val)
+                    if self._last_in_min_heap():
+                        heap_select, heap_alt = self.max_heap, self.min_heap
+                    else:
+                        heap_select, heap_alt = self.min_heap, self.max_heap
+
+                    heap_select.insert(val)
+                    pos = heap_select.size
+                    swap_flag, swap_pos = self._swap_cross_heap_info(pos)
+
+                    if swap_flag:
+                        heap_alt.sift_up(swap_pos)
+                    else:
+                        heap_select.sift_up(swap_pos)
+
 
     def swap(self, posA, posB=None):
         posB = posB or posA
@@ -133,22 +166,27 @@ class heapATwin:
             min_item = self.min_heap.peek()
             self.min_heap.set_item(1, math.inf)
             pos = self.min_heap._heapify_w_info()
-            if self.min_heap.size > self.max_heap.size:
-                if pos == self.min_heap.size:
-                    _ = self.min_heap.remove_last()
-                else:
-                    self.min_heap.swap(pos, self.min_heap.size)
-                    _ = self.min_heap.remove_last()
-                    if self.min_heap.item(pos) > self.max_heap.item(pos):
-                        self.swap(pos)
-                        self.min_heap.sift_up(pos)
+            if pos == self._pos_last():
+                self.min_heap.remove_last()
+                return min_item
             else:
-                last_item = self.max_heap.remove_last()
+                if self.min_heap.size > self.max_heap.size:
+                    last_item = self.max_heap.remove_last()
+                else:
+                    last_item = self.min_heap.remove_last()
                 self.min_heap.set_item(pos, last_item)
-                self.min_heap.sift_up(pos)
+
+                swap_flag, swap_pos = self._swap_cross_heap_info(pos)
+                if swap_flag:
+                    self.max_heap.sift_up(swap_pos)
+                else:
+                    self.min_heap.sift_up(swap_pos)
             return min_item
         else:
             return None
+
+    def peek(self):
+        return self.min()
 
     def min(self):
         if self.min_heap.size:
@@ -175,15 +213,43 @@ class heapATwin:
             max_item = self.max_heap.peek()
             self.max_heap.set_item(1, -math.inf)
             pos = self.max_heap._heapify_w_info()
-            if self.min_heap.size >= self.max_heap.size:
-                self.swap(self.min_heap.size, pos)
-                self.min_heap.remove_last()
-                self.max_heap.sift_up(pos)
-            else:
-                self.max_heap.swap(pos, self.max_heap.size)
+
+            if pos == self._pos_last():
                 self.max_heap.remove_last()
+                return max_item
+            else:
+                if self.min_heap.size > self.max_heap.size:
+                    last_item = self.min_heap.remove_last()
+                else:
+                    last_item = self.max_heap.remove_last()
+                self.max_heap.set_item(pos, last_item)
+
+                swap_flag, swap_pos = self._swap_cross_heap_info(pos)
+                if swap_flag:
+                    self.min_heap.sift_up(swap_pos)
+                else:
+                    self.max_heap.sift_up(swap_pos)
+            return max_item
+        elif self.min_heap.size:
+            return self.pop()
         else:
             return None
+
+    def is_valid(self):
+        is_valid = True
+        # size
+        if self.min_heap.size != self.max_heap.size and self.min_heap.size != self.max_heap.size + 1:
+            return False
+
+        if self.size() != self.min_heap.size + self.max_heap.size:
+            return False
+
+        for key, val in enumerate(self.min_heap):
+            if key < self.max_heap.size and val > self.max_heap.item(key+1):
+                return False
+
+        return is_valid
+
 
     @classmethod
     def from_list(cls, list_val):
@@ -199,7 +265,8 @@ class heapATwin:
         else:
             return cls()
 
-class heapADeap(heapA):
+
+class Deap(heapA):
     _offset = 1
 
     def __init__(self):
@@ -227,14 +294,14 @@ class heapADeap(heapA):
         else:
             return super()._sift_up(pos_current, operator.gt)
 
-    def sift_up_partial(self, pos=None, min_level=1):
+    def sift_up_partial(self, pos=None, pos_root=1):
         pos_current = pos or self._pos_last()
         pos_current = self._swap_cross_heap(pos_current)
 
         if self.in_min_heap(pos_current):
-            return super()._sift_up(pos_current, operator.lt, 1, min_level)
+            return super()._sift_up(pos_current, operator.lt, 1, pos_root)
         else:
-            return super()._sift_up(pos_current, operator.gt, 1, min_level)
+            return super()._sift_up(pos_current, operator.gt, 1, pos_root)
 
     def insert(self, val=None):
         if val is not None:
@@ -250,19 +317,23 @@ class heapADeap(heapA):
     def _remove(self, pos=None):
         pos = pos or self._pos_first()
         if self.size:
-            first_item = self.item(pos)
-            pos_first_item = pos
-            last_item = self.remove_last()
-            if self.size:
-                if self.in_min_heap(pos):
-                    self.set_item(pos_first_item, math.inf)
-                    pos_current = self._heapify_w_info(pos_first_item, operator.gt)
-                else:
-                    self.set_item(pos_first_item, -math.inf)
-                    pos_current = self._heapify_w_info(pos_first_item, operator.lt)
-                self.set_item(pos_current, last_item)  # reinsert last item at a leaf position
-                self.sift_up(pos_current)
-            return first_item
+            if pos == self._pos_last():
+                last_item = self.remove_last()
+                return last_item
+            else:
+                first_item = self.item(pos)
+                pos_first_item = pos
+                last_item = self.remove_last()
+                if self.size:
+                    if self.in_min_heap(pos):
+                        self.set_item(pos_first_item, math.inf)
+                        pos_current = self._heapify_w_info(pos_first_item, operator.gt)
+                    else:
+                        self.set_item(pos_first_item, -math.inf)
+                        pos_current = self._heapify_w_info(pos_first_item, operator.lt)
+                    self.set_item(pos_current, last_item)  # reinsert last item at a leaf position
+                    self.sift_up(pos_current)
+                return first_item
         else:
             return None
 
@@ -279,6 +350,17 @@ class heapADeap(heapA):
         else:
             return None
 
+    def max(self):
+        if self.size:
+            if self.size == 1:
+                return self.peek()
+            else:
+                return self.item(self._pos_first()+1)
+
+    def min(self):
+        if self.size:
+            return self._pos_first()
+
     def _heapify_w_info(self, pos=None, op_cmp=None):
         pos = pos or self._pos_last()
         if self.in_min_heap(pos):
@@ -291,21 +373,82 @@ class heapADeap(heapA):
         _ = self._heapify_w_info(pos)
 
     def _corresponding_pos(self, pos):
+        corresponding_pos = self._corresponding_pos_all(pos)
+        max_pos, max_val = None, None
+        for p in corresponding_pos:
+            if max_pos is None or self.item(p) > max_val:
+                max_pos, max_val = p, self.item(p)
+        return max_pos
+
+
+    def _corresponding_pos_all(self, pos):
         level = self.level(pos)
         nodes_at_prior_level = self.nodes_at_level(level - 1)
-        if self.level(nodes_at_prior_level + pos) == level:
-            pos = pos + nodes_at_prior_level
-            if pos > self._pos_last():
-                return self.pos_parent(pos)
+        pos_last_node = self._pos_last()
+        # This deviates from original paper. There are more stringent situations to ensure
+        # algorithm works for edge cases.
+        if self.in_min_heap(pos):
+            corresponding_node = pos + nodes_at_prior_level
+            if  corresponding_node > pos_last_node:
+                parent = self.pos_parent(corresponding_node)
+                # this is a stricter condition that makes last node as corresponding node
+                if self._child_exists(parent):
+                    left_child = self.pos_left_child(pos)
+                    return [left_child]
+                else:
+                    return [parent]
             else:
-                return pos
-        else:
-            pos = pos - nodes_at_prior_level
-            if self._child_exists(pos):
-                pos_child, _ = self._min_max_family(pos, operator.gt)
-                return pos_child
+                return [corresponding_node]
+        else: # in max heap
+            corresponding_node =  pos - nodes_at_prior_level
+            # this deviates from paper. Node in max heap can have more than one correspondence
+            # first case is when its a last node that's also left. In that case, choose all children of
+            # parent of corresponding node i.e. choose sibling of corresponding node
+            # second case is when corresponding node is a parent. In that case, choose all children.
+            all_nodes = []
+            if pos is self._pos_last() and pos == self.pos_left_child(self.pos_parent(pos)):
+                parent_corresponding_node = self.pos_parent(corresponding_node)
+                for p in self.pos_children(parent_corresponding_node):
+                    if p <= pos_last_node:
+                        all_nodes.append(p)
+                return all_nodes
+            elif self._child_exists(corresponding_node):
+                for p in self.pos_children(corresponding_node):
+                    if p <= pos_last_node:
+                        all_nodes.append(p)
+                return all_nodes
             else:
-                return pos
+                return [corresponding_node]
+
+
+    def is_valid(self):
+        is_valid = True
+
+
+        for index, val in enumerate(self._data_array):
+            pos = index + self._offset
+
+            if pos == 1:
+                if val is not None:
+                    return False
+            else:
+                if self.in_min_heap(pos):
+                    _, min_child = self._min_max_family(pos, operator.lt)
+                    if min_child is not None and val > min_child:
+                        return False
+
+                    alt_pos = self._corresponding_pos(pos)
+                    if( self.item(alt_pos) < val ):
+                        return False
+                else:
+                    _, max_child = self._min_max_family(pos, operator.gt)
+                    if max_child is not None and val < max_child:
+                        return False
+
+        if self.size != len(self._data_array) - self._offset:
+            return False
+
+        return is_valid
 
     @classmethod
     def in_min_heap(cls, pos):
@@ -341,13 +484,14 @@ class heapADeap(heapA):
         if isinstance(list_val, collections.Sequence):
             heap._data_array.extend(list_val)
             heap._size = len(list_val)
-            pos_first = 1 + cls._offset
+            pos_first = heap._pos_first()
             pos_last = pos_first + heap._size - 1
-            # goes till last node in the prior level
-            pos_current = cls.nodes_all_levels(cls.level(cls.pos_parent(pos_last)))
+            # original paper is very cryptic about this part. There are various interpretations
+            # but after a lot of iterations this works. Start backwards from node that may have last node as
+            # corresponding node.
+            pos_current = max(heap._corresponding_pos_all(heap._pos_last()))
             while pos_current >= pos_first:
-                print(heap)
-                current, current_val, level = pos_current, heap.item(pos_current), cls.level(pos_current)
+                current, current_val = pos_current, heap.item(pos_current)
                 if heap.in_min_heap(current):
                     heap.set_item(current, math.inf)
                     current = heap._heapify_w_info(current, operator.gt)
@@ -355,7 +499,12 @@ class heapADeap(heapA):
                     heap.set_item(current, -math.inf)
                     current = heap._heapify_w_info(current, operator.lt)
                 heap.set_item(current, current_val)
-                heap.sift_up_partial(current, level)
+                # this is also unique as this restricts location to which you should sift.
+                # in general think of it as that sifting is fixing the heaps.
+                # At any given time you are interested in only fixing that heap upto the node
+                # or corresponding sub-heap that came before it. Also, something that original implementation
+                # conveniently ignored
+                heap.sift_up_partial(current, pos_current)
                 pos_current = pos_current - 1
             return heap
 

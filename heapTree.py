@@ -1,6 +1,8 @@
 import sys
 sys.path.extend(['/Users/kiki/PycharmProjects/BTrees'])
 from BTree import BTreeLinked
+import collections
+
 
 class heapT(BTreeLinked):
 
@@ -61,7 +63,7 @@ class heapT(BTreeLinked):
         return self.remove()
 
     def peek(self):
-        return self.root
+        return self.root.item
 
     def _increment_num_of_nodes(self):
         self._num_of_nodes = self._num_of_nodes + 1

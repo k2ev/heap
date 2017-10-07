@@ -64,6 +64,10 @@ class heapA:
         else:
             return ""
 
+    def __iter__(self):
+        for val in self._data_array:
+            yield val
+
     def increment_size(self):
         self._size += 1
 
@@ -125,13 +129,12 @@ class heapA:
         pos = pos or self._pos_first()
         self._heapify(pos, operator.gt)
 
-    def _sift_up(self, pos=None, op_cmp=operator.lt, shift=1, min_level=None):
+    def _sift_up(self, pos=None, op_cmp=operator.lt, shift=1, pos_root=None):
         pos = pos or self._pos_last()
         pos_parent = self.pos_parent(pos, shift)
+        pos_root = pos_root or self._pos_first()
 
-        while pos_parent >= self._pos_first():
-            if min_level is not None and self.level(pos_parent) < min_level:
-                break
+        while pos_parent >= pos_root:
             if op_cmp(self.item(pos), self.item(pos_parent)):
                 self.swap(pos, pos_parent)
                 pos = pos_parent
@@ -141,7 +144,7 @@ class heapA:
 
     def _heapify_w_info(self, pos=None, op_cmp=operator.gt):
         pos = pos or self._pos_first()
-        if pos <= self.size and self._child_exists(pos): # at-least have one child
+        if pos <= self._pos_last() and self._child_exists(pos): # at-least have one child
             pos_val = self.item(pos)
             min_max_pos, min_max_val = self._min_max_family(pos, self.op_flip(op_cmp))
             if min_max_val is not None and op_cmp(pos_val, min_max_val):
@@ -151,7 +154,7 @@ class heapA:
         return pos
 
     def _heapify(self, pos=None, op_cmp=operator.gt):
-        pos = None or self._pos_first()
+        pos = pos or self._pos_first()
         _ = self._heapify_w_info(pos, op_cmp)
 
     def _child_exists(self, pos):
@@ -175,6 +178,9 @@ class heapA:
     def is_empty(self):
         return False if self.size > 0 else True
 
+    def is_valid(self):
+        return True
+
     @classmethod
     def merge(cls, heapA, heapB):
         heapA_data = heapA.data_array
@@ -189,12 +195,11 @@ class heapA:
             heap._data_array.extend(list_val)
             heap._size = len(list_val)
             pos_first = 1 + cls._offset
-            pos_last = pos_first + heap._size
+            pos_last = pos_first + heap._size - 1
             pos_current = cls.pos_parent(pos_last)
             while pos_current >= pos_first:
                 heap.heapify(pos_current)
                 pos_current = pos_current - 1
-                print(heap)
         return heap
 
     @classmethod
@@ -204,6 +209,14 @@ class heapA:
     @classmethod
     def pos_parent(cls, pos, shift=1):
         return pos >> shift
+
+    @classmethod
+    def pos_left_child(cls, pos):
+        return cls.pos_children(pos)[0]
+
+    @classmethod
+    def pos_right_child(cls, pos):
+        return cls.pos_children(pos)[1]
 
     def _min_max_family(self, pos, op_cmp=operator.lt, num_generations = 1):
         family = family_current = self.pos_children(pos)
