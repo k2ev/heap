@@ -4,48 +4,50 @@ from DEPS import heapAMinMax, heapATwin, Deap
 import random
 
 
-def run_test(heapCls, num = 10000):
+def run_test(heapCls, num = 10000, repeat_cnt = 5):
     print("Test for class:\t" + str(heapCls) + "\n")
 
-    if heapCls == heapAMax:
-        op_A, op_B = max, min
-    else:
-        op_A, op_B = min, max
+    for iter in range(1,repeat_cnt+1):
+        print("Test Run: ", iter, " of ", repeat_cnt, "\n")
+        if heapCls == heapAMax:
+            op_A, op_B = max, min
+        else:
+            op_A, op_B = min, max
 
-    list = random.sample(range(1, int(num*2)), num)
+        list = random.sample(range(1, int(num*2)), num)
 
-    if heapCls != heapT:
-        y = heapCls()
-        y.insert(list)
-        assert y.is_valid(), str(list) + "\n" + str(y)
-        assert op_A(list) == y.peek(), str(list)
-        if heapCls == heapAMinMax or heapCls == Deap or heapCls == heapATwin:
-            assert getattr(y, op_B.__qualname__)() == op_B(list), str(op_B(list)) + "\n" + str(y)
+        if heapCls != heapT:
+            y = heapCls()
+            y.insert(list)
+            assert y.is_valid(), str(list) + "\n" + str(y)
+            assert op_A(list) == y.peek(), str(list)
+            if heapCls in [heapATwin, heapAMinMax, heapATwin, Deap]:
+                assert getattr(y, op_B.__qualname__)() == op_B(list), str(op_B(list)) + "\n" + str(y)
 
-    h = heapCls.from_list(list)
-    assert h.is_valid(), str(list) + "\n" + str(h)
-    assert op_A(list) == h.peek(), str(op_A(list)) + "\n" + str(h)
+        h = heapCls.from_list(list)
+        assert h.is_valid(), str(list) + "\n" + str(h)
+        assert op_A(list) == h.peek(), str(op_A(list)) + "\n" + str(h)
 
-    list_rm = []
-    for elem in range(0, num//10):
-        list_rm.append(elem)
-        h.pop()
-        m = op_A(list)
-        list.remove(m)
-        assert h.peek() == op_A(list), str(list) + "\n" + str(h)
+        list_rm = []
+        for elem in range(0, num//10):
+            list_rm.append(elem)
+            h.pop()
+            m = op_A(list)
+            list.remove(m)
+            assert h.peek() == op_A(list), str(list) + "\n" + str(h)
 
-    for elem in list_rm:
-        h.insert(elem)
-        list.append(elem)
-        assert h.peek() == op_A(list)
+        for elem in list_rm:
+            h.insert(elem)
+            list.append(elem)
+            assert h.peek() == op_A(list)
 
-    if heapCls == heapAMinMax or heapCls == Deap or heapCls== heapATwin or heapATwin:
-        assert h.max() == op_B(list)
-        for _ in range(0,num//10):
-            m1 = h.pop_max()
-            m2 = op_B(list)
-            list.remove(m2)
-            assert getattr(h, op_B.__qualname__)() == op_B(list), str(m1) + "\t" + str(m2) + "\n" + str(list) + "\n" + str(op_B(list)) + "\n" + str(h)
+        if heapCls in [heapATwin, heapAMinMax, heapATwin, Deap]:
+            assert h.max() == op_B(list)
+            for _ in range(0,num//10):
+                m1 = h.pop_max()
+                m2 = op_B(list)
+                list.remove(m2)
+                assert getattr(h, op_B.__qualname__)() == op_B(list), str(m1) + "\t" + str(m2) + "\n" + str(list) + "\n" + str(op_B(list)) + "\n" + str(h)
 
 def run_heapT():
     #h = heapT.from_list([3,2,1,7,8,4,10,16,12])
@@ -82,12 +84,15 @@ def run_heapAMinMax():
     print(a)
     a.pop()
     print(a)
-    list = random.sample(range(1, int(1e6)), 10)
+    list = random.sample(range(1, int(1000)), 20)
+    #list = [823096, 372566, 122173, 838524, 73017, 618705, 544062, 972372, 878434, 986564]
     lmax = max(list)
     lmin = min(list)
+    print(list)
     a = heapAMinMax.from_list(list)
+    print(a)
     hmin = a.peek()
-    print(lmin, hmin)
+    assert lmin == hmin, str(lmin) + "\t" + str(hmin) + "\n" + str(list) + "\n" + str(a)
 
 def run_twin():
     a = heapATwin.from_list([10,1,3,2,11,0,5, 6, 8, 9, 23])
@@ -142,8 +147,8 @@ def main():
     #run_heapAMinMax()
     #run_twin()
     #run_deap()
-    types = [heapA, heapAMax, heapT,]
-    types = [heapATwin]
+    types = [heapA, heapAMax, heapT, heapATwin, Deap, heapAMinMax ]
+    #types = []
     for cls in types:
         run_test(cls)
 

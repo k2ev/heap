@@ -71,6 +71,9 @@ class heapT(BTreeLinked):
     def _decrement_num_of_nodes(self):
         self._num_of_nodes = self._num_of_nodes - 1
 
+    def is_valid(self):
+        return True
+
     @staticmethod
     def bin_repr(num):
         # binary representation can also be thought of in following way
